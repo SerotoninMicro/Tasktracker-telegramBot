@@ -11,7 +11,9 @@ def start(update, context):
         "2. /viewtasks - View your saved tasks\n"
         "3. /cleartasks - Clear your saved tasks\n"
         "4. /randomtask - Get a random task from your list\n"
-        "5. /restart - Restart the bot session\n"
+        "5. /complete - Complete tasks or random task\n"
+        "6. /completefromlist - Complete one task from the list\n"
+        "7. /restart - Restart the bot session\n"
         "Feel free to explore these options!"
     )
 
@@ -35,6 +37,7 @@ def viewtasks(update, context):
     tasks = context.user_data.get('tasks', [])
     if tasks:
         task_list = "\n".join(tasks)
+        context.user_data['recent_task'] = tasks[-1]  # Store the most recent task
         update.message.reply_text("Your tasks:\n" + task_list)
     else:
         update.message.reply_text("You haven't added any tasks yet.")
@@ -47,9 +50,38 @@ def randomtask(update, context):
     tasks = context.user_data.get('tasks', [])
     if tasks:
         random_task = random.choice(tasks)
+        context.user_data['recent_task'] = random_task  # Store the most recent task
         update.message.reply_text("Your random task is: " + random_task)
     else:
         update.message.reply_text("You haven't added any tasks yet.")
+
+def completefromlist(update, context):
+    tasks = context.user_data.get('tasks', [])
+    if not tasks:
+        update.message.reply_text("You haven't added any tasks yet.")
+        return
+    task_to_delete = update.message.text.replace("/completefromlist", "").strip()
+    if task_to_delete not in tasks:
+        update.message.reply_text("Task not found in the list.")
+        return
+    tasks.remove(task_to_delete)
+    context.user_data['tasks'] = tasks
+    update.message.reply_text(f"Task '{task_to_delete}' has been deleted from the list.")
+
+def complete(update, context):
+    recent_task = context.user_data.get('recent_task')
+    if recent_task:
+        tasks = context.user_data.get('tasks', [])
+        if recent_task in tasks:
+            tasks.remove(recent_task)
+            context.user_data['tasks'] = tasks
+
+            update.message.reply_text(f"Congratulations! You have completed the task:\n{recent_task}")
+            del context.user_data['recent_task']
+        else:
+            update.message.reply_text("The selected task no longer exists in your task list.")
+    else:
+        update.message.reply_text("No task found. Please use /viewtasks or /randomtask first.")
 
 def tasks_input(update, context):
     user_input = update.message.text
@@ -95,6 +127,9 @@ def main():
     )
 
     dispatcher.add_handler(conv_handler)
+
+    dispatcher.add_handler(CommandHandler('completefromlist', completefromlist))
+    dispatcher.add_handler(CommandHandler('complete', complete))
 
     updater.start_polling()
 

@@ -2,7 +2,7 @@ import random
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
 
-NEW_TASKLIST, ADD_TASKS, VIEW_TASKS = range(3)
+NEW_TASKLIST, ADD_TASKS, VIEW_TASKS, VIEW_TASKS_COMPLETE = range(4)
 
 def start(update, context):
     update.message.reply_text(
@@ -41,6 +41,7 @@ def viewtasks(update, context):
         update.message.reply_text("Your tasks:\n" + task_list)
     else:
         update.message.reply_text("You haven't added any tasks yet.")
+    return VIEW_TASKS_COMPLETE  # Change state to handle completion of viewing tasks
 
 def cleartasks(update, context):
     context.user_data['tasks'] = []
@@ -104,7 +105,7 @@ def tasks_input(update, context):
     return ConversationHandler.END
 
 def main():
-    updater = Updater("MY_API_IS_HERE", use_context=True)
+    updater = Updater("6997588795:AAG_v5j9oq9x0Cy23Sod-b5udjxkjKey9fQ", use_context=True)
 
     dispatcher = updater.dispatcher
 
@@ -122,6 +123,7 @@ def main():
                 MessageHandler(Filters.regex('^🔍 View Tasks$'), viewtasks),
             ],
             ADD_TASKS: [MessageHandler(Filters.text & ~Filters.command, tasks_input)],
+            VIEW_TASKS_COMPLETE: [MessageHandler(Filters.regex('^📝 Add Tasks$'), addtasks)],  # Return to addtasks state after viewing tasks
         },
         fallbacks=[]
     )
